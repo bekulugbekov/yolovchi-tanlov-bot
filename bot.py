@@ -30,109 +30,61 @@ comments_store: dict = defaultdict(lambda: defaultdict(set))
 # ── Translations ──────────────────────────────────────────────────────────────
 TEXTS = {
     "uz": {
-        "welcome": (
-            "👋 Salom! Men <b>Tanlov Botiman</b> 🎉\n\n"
-            "Kanal postidagi izohchilar orasidan tasodifiy g'oliblarni aniqlayman.\n\n"
-            "Quyidan tilni tanlang:"
-        ),
-        "lang_set":      "✅ O'zbek tili tanlandi!\n\n",
-        "send_post":     "📨 Kanaldan postni menga <b>forward</b> qiling:",
-        "send_count":    "🔢 Nechta g'olib tanlash kerak?\n\nRaqam kiriting (masalan: <code>3</code>):",
-        "bad_number":    "❌ Iltimos, musbat raqam kiriting!",
-        "processing":    "⏳ Izohlar aniqlanmoqda...",
-        "no_comments": (
-            "😕 Bu post uchun izohlar topilmadi.\n\n"
-            "<b>Sababi:</b> Bot faqat o'zi <b>admin</b> bo'lgan muhokama guruhidagi "
-            "izohlarni ko'ra oladi.\n"
-            "👉 Botni kanalning muhokama guruhiga admin sifatida qo'shing."
-        ),
-        "not_enough":    "⚠️ Izohchilar (<b>{total}</b> ta) so'ralgan sondan (<b>{need}</b> ta) kam!\nBarchasi g'olib deb belgilandi:",
-        "fwd_only":      "❌ Iltimos, kanal postini <b>forward</b> qiling!",
-        "not_ch_post":   "❌ Bu kanal posti emas. Kanaldan post forward qiling.",
-        "error":         "❌ Xatolik yuz berdi. Qaytadan urinib ko'ring.",
-        "btn_new":       "🔄 Yangi tanlov",
-        "btn_lang":      "🌐 Til",
-        "res_title":     "🏆 <b>G'OLIBLAR RO'YXATI</b>",
-        "res_total":     "💬 Jami izohchilar",
-        "res_picked":    "🎲 Tanlangan",
-        "help": (
-            "ℹ️ <b>Botdan foydalanish:</b>\n\n"
-            "1️⃣ Kanaldan postni botga forward qiling\n"
-            "2️⃣ G'oliblar sonini kiriting\n"
-            "3️⃣ Bot tasodifiy g'oliblarni aniqlaydi\n\n"
-            "⚠️ Bot kanalning <b>muhokama guruhiga admin</b> bo'lishi shart!\n"
-            "Faqat bot guruhga qo'shilgandan <b>keyin</b> yozilgan izohlar hisoblanadi."
-        ),
+        "welcome":    "👋 Salom! Men <b>Tanlov Botiman</b> 🎉\n\nKanal postidagi izohchilar orasidan tasodifiy g'oliblarni aniqlayman.\n\n📌 <b>Buyruqlar:</b>\n/start — Botni ishga tushirish\n/language — Tilni o'zgartirish\n/help — Yordam\n\nQuyidan tilni tanlang:",
+        "lang_set":   "✅ O'zbek tili tanlandi!\n\n",
+        "send_post":  "📨 Kanaldan postni menga <b>forward</b> qiling:",
+        "send_count": "🔢 Nechta g'olib tanlash kerak?\n\nRaqam kiriting (masalan: <code>3</code>):",
+        "bad_number": "❌ Iltimos, musbat raqam kiriting!",
+        "processing": "⏳ Izohlar aniqlanmoqda...",
+        "no_comments":"😕 Bu post uchun izohlar topilmadi.\n\n⚠️ Botni kanalning muhokama guruhiga <b>admin</b> sifatida qo'shing.",
+        "not_enough": "⚠️ Izohchilar (<b>{total}</b> ta) so'ralgan sondan (<b>{need}</b> ta) kam!\nBarchasi g'olib deb belgilandi:",
+        "fwd_only":   "❌ Iltimos, kanal postini <b>forward</b> qiling!",
+        "not_ch":     "❌ Bu kanal posti emas. Kanaldan post forward qiling.",
+        "error":      "❌ Xatolik yuz berdi. Qaytadan urinib ko'ring.",
+        "btn_new":    "🔄 Yangi tanlov",
+        "btn_lang":   "🌐 Til",
+        "res_title":  "🏆 <b>G'OLIBLAR RO'YXATI</b>",
+        "res_total":  "💬 Jami izohchilar",
+        "res_pick":   "🎲 Tanlangan",
+        "help":       "ℹ️ <b>Botdan foydalanish:</b>\n\n1️⃣ Kanaldan postni botga forward qiling\n2️⃣ G'oliblar sonini kiriting\n3️⃣ Bot tasodifiy g'oliblarni aniqlaydi\n\n⚠️ Bot kanalning <b>muhokama guruhiga admin</b> bo'lishi shart!",
     },
     "ru": {
-        "welcome": (
-            "👋 Привет! Я <b>Бот для розыгрышей</b> 🎉\n\n"
-            "Определяю случайных победителей среди комментаторов поста канала.\n\n"
-            "Выберите язык ниже:"
-        ),
-        "lang_set":      "✅ Выбран русский язык!\n\n",
-        "send_post":     "📨 Перешлите мне пост из канала:",
-        "send_count":    "🔢 Сколько победителей выбрать?\n\nВведите число (например: <code>3</code>):",
-        "bad_number":    "❌ Пожалуйста, введите корректное положительное число!",
-        "processing":    "⏳ Анализирую комментарии...",
-        "no_comments": (
-            "😕 Комментарии к этому посту не найдены.\n\n"
-            "<b>Причина:</b> Бот видит только комментарии в группе обсуждений, "
-            "где он является <b>администратором</b>.\n"
-            "👉 Добавьте бота как администратора в группу обсуждений канала."
-        ),
-        "not_enough":    "⚠️ Комментаторов (<b>{total}</b>) меньше запрошенного кол-ва (<b>{need}</b>)!\nВсе объявлены победителями:",
-        "fwd_only":      "❌ Пожалуйста, перешлите пост из канала!",
-        "not_ch_post":   "❌ Это не пост канала. Перешлите пост из канала.",
-        "error":         "❌ Произошла ошибка. Попробуйте снова.",
-        "btn_new":       "🔄 Новый розыгрыш",
-        "btn_lang":      "🌐 Язык",
-        "res_title":     "🏆 <b>СПИСОК ПОБЕДИТЕЛЕЙ</b>",
-        "res_total":     "💬 Всего комментаторов",
-        "res_picked":    "🎲 Выбрано",
-        "help": (
-            "ℹ️ <b>Как пользоваться ботом:</b>\n\n"
-            "1️⃣ Перешлите пост из канала боту\n"
-            "2️⃣ Введите количество победителей\n"
-            "3️⃣ Бот случайно выберет победителей\n\n"
-            "⚠️ Бот должен быть <b>администратором</b> группы обсуждений канала!\n"
-            "Учитываются только комментарии, написанные <b>после</b> добавления бота."
-        ),
+        "welcome":    "👋 Привет! Я <b>Бот для розыгрышей</b> 🎉\n\nОпределяю случайных победителей среди комментаторов поста канала.\n\n📌 <b>Команды:</b>\n/start — Запустить бота\n/language — Сменить язык\n/help — Помощь\n\nВыберите язык ниже:",
+        "lang_set":   "✅ Выбран русский язык!\n\n",
+        "send_post":  "📨 Перешлите мне пост из канала:",
+        "send_count": "🔢 Сколько победителей выбрать?\n\nВведите число (например: <code>3</code>):",
+        "bad_number": "❌ Пожалуйста, введите корректное положительное число!",
+        "processing": "⏳ Анализирую комментарии...",
+        "no_comments":"😕 Комментарии не найдены.\n\n⚠️ Добавьте бота как <b>администратора</b> в группу обсуждений канала.",
+        "not_enough": "⚠️ Комментаторов (<b>{total}</b>) меньше запрошенного (<b>{need}</b>)!\nВсе объявлены победителями:",
+        "fwd_only":   "❌ Пожалуйста, перешлите пост из канала!",
+        "not_ch":     "❌ Это не пост канала. Перешлите пост из канала.",
+        "error":      "❌ Произошла ошибка. Попробуйте снова.",
+        "btn_new":    "🔄 Новый розыгрыш",
+        "btn_lang":   "🌐 Язык",
+        "res_title":  "🏆 <b>СПИСОК ПОБЕДИТЕЛЕЙ</b>",
+        "res_total":  "💬 Всего комментаторов",
+        "res_pick":   "🎲 Выбрано",
+        "help":       "ℹ️ <b>Как пользоваться:</b>\n\n1️⃣ Перешлите пост из канала боту\n2️⃣ Введите количество победителей\n3️⃣ Бот случайно выберет победителей\n\n⚠️ Бот должен быть <b>администратором</b> группы обсуждений!",
     },
     "en": {
-        "welcome": (
-            "👋 Hello! I'm a <b>Giveaway Bot</b> 🎉\n\n"
-            "I randomly pick winners from commenters on a channel post.\n\n"
-            "Select your language below:"
-        ),
-        "lang_set":      "✅ English language selected!\n\n",
-        "send_post":     "📨 Forward a channel post to me:",
-        "send_count":    "🔢 How many winners to select?\n\nEnter a number (e.g. <code>3</code>):",
-        "bad_number":    "❌ Please enter a valid positive number!",
-        "processing":    "⏳ Analyzing comments...",
-        "no_comments": (
-            "😕 No comments found for this post.\n\n"
-            "<b>Reason:</b> The bot can only see comments in a discussion group "
-            "where it is an <b>admin</b>.\n"
-            "👉 Add the bot as an admin to the channel's linked discussion group."
-        ),
-        "not_enough":    "⚠️ Commenters (<b>{total}</b>) are fewer than requested (<b>{need}</b>)!\nAll are declared winners:",
-        "fwd_only":      "❌ Please forward a channel post!",
-        "not_ch_post":   "❌ This is not a channel post. Forward a post from a channel.",
-        "error":         "❌ An error occurred. Please try again.",
-        "btn_new":       "🔄 New draw",
-        "btn_lang":      "🌐 Language",
-        "res_title":     "🏆 <b>WINNERS LIST</b>",
-        "res_total":     "💬 Total commenters",
-        "res_picked":    "🎲 Selected",
-        "help": (
-            "ℹ️ <b>How to use the bot:</b>\n\n"
-            "1️⃣ Forward a channel post to the bot\n"
-            "2️⃣ Enter the number of winners\n"
-            "3️⃣ Bot randomly selects winners\n\n"
-            "⚠️ The bot must be an <b>admin</b> of the channel's discussion group!\n"
-            "Only comments posted <b>after</b> the bot was added are counted."
-        ),
+        "welcome":    "👋 Hello! I'm a <b>Giveaway Bot</b> 🎉\n\nI randomly pick winners from commenters on a channel post.\n\n📌 <b>Commands:</b>\n/start — Start the bot\n/language — Change language\n/help — Help\n\nSelect your language below:",
+        "lang_set":   "✅ English language selected!\n\n",
+        "send_post":  "📨 Forward a channel post to me:",
+        "send_count": "🔢 How many winners to select?\n\nEnter a number (e.g. <code>3</code>):",
+        "bad_number": "❌ Please enter a valid positive number!",
+        "processing": "⏳ Analyzing comments...",
+        "no_comments":"😕 No comments found.\n\n⚠️ Add the bot as an <b>admin</b> to the channel's discussion group.",
+        "not_enough": "⚠️ Commenters (<b>{total}</b>) are fewer than requested (<b>{need}</b>)!\nAll declared as winners:",
+        "fwd_only":   "❌ Please forward a channel post!",
+        "not_ch":     "❌ Not a channel post. Forward a post from a channel.",
+        "error":      "❌ An error occurred. Please try again.",
+        "btn_new":    "🔄 New draw",
+        "btn_lang":   "🌐 Language",
+        "res_title":  "🏆 <b>WINNERS LIST</b>",
+        "res_total":  "💬 Total commenters",
+        "res_pick":   "🎲 Selected",
+        "help":       "ℹ️ <b>How to use:</b>\n\n1️⃣ Forward a channel post to the bot\n2️⃣ Enter the number of winners\n3️⃣ Bot randomly selects winners\n\n⚠️ The bot must be an <b>admin</b> of the channel's discussion group!",
     },
 }
 
