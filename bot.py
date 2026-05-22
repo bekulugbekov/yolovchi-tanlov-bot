@@ -325,9 +325,15 @@ async def store_comment(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 # ── App entry point ───────────────────────────────────────────────────────────
 def main() -> None:
     import os
-    TOKEN = os.getenv("BOT_TOKEN")
-    if not TOKEN:
-        raise ValueError("BOT_TOKEN environment variable is not set")
+    import asyncio
+
+    # Python 3.14 fix: manually create event loop
+    try:
+        asyncio.get_event_loop()
+    except RuntimeError:
+        asyncio.set_event_loop(asyncio.new_event_loop())
+
+    TOKEN = os.getenv('BOT_TOKEN', 'YOUR_BOT_TOKEN_HERE')
 
     app = Application.builder().token(TOKEN).build()
 
