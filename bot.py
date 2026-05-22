@@ -325,7 +325,9 @@ async def store_comment(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 # ── App entry point ───────────────────────────────────────────────────────────
 def main() -> None:
     import os
-    TOKEN = os.getenv("BOT_TOKEN", "8359476930:AAFrIZLcVCwUYpjr2bW6eR_0sQy1RkqQ5wU")
+    TOKEN = os.getenv("BOT_TOKEN")
+    if not TOKEN:
+        raise ValueError("BOT_TOKEN environment variable is not set")
 
     app = Application.builder().token(TOKEN).build()
 
