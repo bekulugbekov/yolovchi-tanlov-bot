@@ -325,7 +325,7 @@ async def store_comment(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 # ── App entry point ───────────────────────────────────────────────────────────
 def main() -> None:
     import os
-    TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
+    TOKEN = os.getenv("BOT_TOKEN", "8359476930:AAFrIZLcVCwUYpjr2bW6eR_0sQy1RkqQ5wU")
 
     app = Application.builder().token(TOKEN).build()
 
