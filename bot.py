@@ -27,6 +27,10 @@ SELECTING_LANG, WAITING_POST, WAITING_COUNT = range(3)
 # Structure: { channel_id: { message_id: set(user_display_strings) } }
 comments_store: dict = defaultdict(lambda: defaultdict(set))
 
+# Maps discussion group thread IDs to original channel post IDs
+# Structure: { group_id: { thread_msg_id: (ch_id, ch_msg_id) } }
+thread_map: dict = defaultdict(dict)
+
 # ── Translations ──────────────────────────────────────────────────────────────
 TEXTS = {
     "uz": {
@@ -246,25 +250,39 @@ async def cb_action(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 # ── Listen for comments in discussion groups ──────────────────────────────────
 async def store_comment(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """
-    Runs in ANY group the bot is a member of.
-    Stores commenters who reply to forwarded channel posts in the discussion group.
-    """
     msg = update.message
-    if not msg or not msg.reply_to_message:
+    if not msg:
         return
 
-    reply = msg.reply_to_message
+    group_id = msg.chat_id
 
-    # Replied-to message must be a forwarded channel post
-    if not reply.forward_origin or reply.forward_origin.type != "channel":
+    # Auto-forwarded channel post arriving in discussion group — build the mapping
+    if getattr(msg, "is_automatic_forward", False):
+        origin = msg.forward_origin
+        if origin and origin.type == "channel":
+            thread_map[group_id][msg.message_id] = (origin.chat.id, origin.message_id)
         return
-
-    ch_id     = reply.forward_origin.chat.id
-    ch_msg_id = reply.forward_origin.message_id
 
     user = msg.from_user
     if not user or user.is_bot:
+        return
+
+    ch_id = ch_msg_id = None
+
+    # Case 1: message is inside a known thread (most common — user just types in comments)
+    if msg.message_thread_id and msg.message_thread_id in thread_map.get(group_id, {}):
+        ch_id, ch_msg_id = thread_map[group_id][msg.message_thread_id]
+
+    # Case 2: explicit reply directly to the auto-forwarded channel post
+    elif msg.reply_to_message:
+        reply = msg.reply_to_message
+        if reply.forward_origin and reply.forward_origin.type == "channel":
+            ch_id = reply.forward_origin.chat.id
+            ch_msg_id = reply.forward_origin.message_id
+        elif reply.message_id in thread_map.get(group_id, {}):
+            ch_id, ch_msg_id = thread_map[group_id][reply.message_id]
+
+    if not ch_id or not ch_msg_id:
         return
 
     display = f"@{user.username}" if user.username else (
@@ -324,13 +342,13 @@ def main() -> None:
     app.add_handler(conv)
     app.add_handler(CommandHandler("help", cmd_help))
 
-    # Comment collector — listens to all group messages
+    # Comment collector — listens to ALL group messages (threads + replies)
     app.add_handler(
         MessageHandler(
-            filters.ChatType.GROUPS & filters.REPLY,
+            filters.ChatType.GROUPS,
             store_comment
         ),
-        group=1,  # separate handler group so it doesn't conflict with ConversationHandler
+        group=1,
     )
 
     logger.info("✅ Bot ishga tushdi / Бот запущен / Bot started")
