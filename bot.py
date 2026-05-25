@@ -201,7 +201,7 @@ async def handle_count(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             f"📢 {ch_title}",
             "─" * 30,
             f'{tx(lang, "res_total")}: <b>{total}</b>',
-            f'{tx(lang, "res_picked")}: <b>{pick_n}</b>',
+            f'{tx(lang, "res_pick")}: <b>{pick_n}</b>',
             "─" * 30,
         ]
         if warning:
