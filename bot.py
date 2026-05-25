@@ -277,15 +277,16 @@ async def cb_action(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 def main() -> None:
     global pyro
 
-    TOKEN    = os.environ["BOT_TOKEN"]
-    API_ID   = int(os.environ["API_ID"])
-    API_HASH = os.environ["API_HASH"]
+    TOKEN          = os.environ["BOT_TOKEN"]
+    API_ID         = int(os.environ["API_ID"])
+    API_HASH       = os.environ["API_HASH"]
+    SESSION_STRING = os.environ["SESSION_STRING"]
 
     pyro = PyroClient(
-        "bot_session",
+        ":memory:",
         api_id=API_ID,
         api_hash=API_HASH,
-        bot_token=TOKEN,
+        session_string=SESSION_STRING,
     )
 
     app = Application.builder().token(TOKEN).build()
