@@ -109,7 +109,8 @@ def action_kb(lang: str) -> InlineKeyboardMarkup:
     ]])
 
 # ── Fetch comments via Pyrogram ───────────────────────────────────────────────
-async def fetch_comments(ch_id: int, msg_id: int) -> set:
+async def fetch_comments(ch_id: int, msg_id: int) -> tuple[set, str | None]:
+    """Returns (commenters_set, error_message_or_None)."""
     commenters = set()
     try:
         async for message in pyro.get_discussion_replies(ch_id, msg_id):
@@ -124,9 +125,10 @@ async def fetch_comments(ch_id: int, msg_id: int) -> set:
                     name += f" {user.last_name}"
                 if name.strip():
                     commenters.add(name.strip())
+        return commenters, None
     except Exception as e:
         logger.error(f"fetch_comments error: {e}")
-    return commenters
+        return commenters, str(e)
 
 # ── /start ────────────────────────────────────────────────────────────────────
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -197,8 +199,15 @@ async def handle_count(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     ch_title = ctx.user_data.get("ch_title", "Channel")
 
     try:
-        pool = list(await fetch_comments(ch_id, msg_id))
+        pool_set, err = await fetch_comments(ch_id, msg_id)
+        pool = list(pool_set)
         await wait.delete()
+
+        if err and not pool:
+            await update.message.reply_html(
+                f"❌ Pyrogram xatolik:\n<code>{err}</code>\n\nch_id: <code>{ch_id}</code>  msg_id: <code>{msg_id}</code>"
+            )
+            return WAITING_POST
 
         if not pool:
             await update.message.reply_html(
