@@ -6,13 +6,14 @@ Kanal postidagi izohchilar orasidan tasodifiy g'oliblarni aniqlaydi.
 """
 
 import logging
+import os
 import random
-from collections import defaultdict
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application, CommandHandler, MessageHandler,
     CallbackQueryHandler, filters, ContextTypes, ConversationHandler,
 )
+from pyrogram import Client as PyroClient
 
 logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(message)s",
@@ -23,13 +24,8 @@ logger = logging.getLogger(__name__)
 # ── Conversation states ───────────────────────────────────────────────────────
 SELECTING_LANG, WAITING_POST, WAITING_COUNT = range(3)
 
-# ── In-memory comment store ───────────────────────────────────────────────────
-# Structure: { channel_id: { message_id: set(user_display_strings) } }
-comments_store: dict = defaultdict(lambda: defaultdict(set))
-
-# Maps discussion group thread IDs to original channel post IDs
-# Structure: { group_id: { thread_msg_id: (ch_id, ch_msg_id) } }
-thread_map: dict = defaultdict(dict)
+# ── Pyrogram client (initialized in main) ────────────────────────────────────
+pyro: PyroClient = None
 
 # ── Translations ──────────────────────────────────────────────────────────────
 TEXTS = {
@@ -39,7 +35,7 @@ TEXTS = {
         "send_post":  "📨 Kanaldan postni menga <b>forward</b> qiling:",
         "send_count": "🔢 Nechta g'olib tanlash kerak?\n\nRaqam kiriting (masalan: <code>3</code>):",
         "bad_number": "❌ Iltimos, musbat raqam kiriting!",
-        "processing": "⏳ Izohlar aniqlanmoqda...",
+        "processing": "⏳ Izohlar yuklanmoqda...",
         "no_comments":"😕 Bu post uchun izohlar topilmadi.\n\n⚠️ Botni kanalning muhokama guruhiga <b>admin</b> sifatida qo'shing.",
         "not_enough": "⚠️ Izohchilar (<b>{total}</b> ta) so'ralgan sondan (<b>{need}</b> ta) kam!\nBarchasi g'olib deb belgilandi:",
         "fwd_only":   "❌ Iltimos, kanal postini <b>forward</b> qiling!",
@@ -58,7 +54,7 @@ TEXTS = {
         "send_post":  "📨 Перешлите мне пост из канала:",
         "send_count": "🔢 Сколько победителей выбрать?\n\nВведите число (например: <code>3</code>):",
         "bad_number": "❌ Пожалуйста, введите корректное положительное число!",
-        "processing": "⏳ Анализирую комментарии...",
+        "processing": "⏳ Загружаю комментарии...",
         "no_comments":"😕 Комментарии не найдены.\n\n⚠️ Добавьте бота как <b>администратора</b> в группу обсуждений канала.",
         "not_enough": "⚠️ Комментаторов (<b>{total}</b>) меньше запрошенного (<b>{need}</b>)!\nВсе объявлены победителями:",
         "fwd_only":   "❌ Пожалуйста, перешлите пост из канала!",
@@ -77,7 +73,7 @@ TEXTS = {
         "send_post":  "📨 Forward a channel post to me:",
         "send_count": "🔢 How many winners to select?\n\nEnter a number (e.g. <code>3</code>):",
         "bad_number": "❌ Please enter a valid positive number!",
-        "processing": "⏳ Analyzing comments...",
+        "processing": "⏳ Loading comments...",
         "no_comments":"😕 No comments found.\n\n⚠️ Add the bot as an <b>admin</b> to the channel's discussion group.",
         "not_enough": "⚠️ Commenters (<b>{total}</b>) are fewer than requested (<b>{need}</b>)!\nAll declared as winners:",
         "fwd_only":   "❌ Please forward a channel post!",
@@ -111,6 +107,26 @@ def action_kb(lang: str) -> InlineKeyboardMarkup:
         InlineKeyboardButton(tx(lang, "btn_new"),  callback_data="new_draw"),
         InlineKeyboardButton(tx(lang, "btn_lang"), callback_data="show_lang"),
     ]])
+
+# ── Fetch comments via Pyrogram ───────────────────────────────────────────────
+async def fetch_comments(ch_id: int, msg_id: int) -> set:
+    commenters = set()
+    try:
+        async for message in pyro.get_discussion_replies(ch_id, msg_id):
+            user = message.from_user
+            if not user or user.is_bot:
+                continue
+            if user.username:
+                commenters.add(f"@{user.username}")
+            else:
+                name = user.first_name or ""
+                if user.last_name:
+                    name += f" {user.last_name}"
+                if name.strip():
+                    commenters.add(name.strip())
+    except Exception as e:
+        logger.error(f"fetch_comments error: {e}")
+    return commenters
 
 # ── /start ────────────────────────────────────────────────────────────────────
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -152,7 +168,7 @@ async def handle_post(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
     origin = msg.forward_origin
     if origin.type != "channel":
-        await msg.reply_html(tx(lang, "not_ch_post"))
+        await msg.reply_html(tx(lang, "not_ch"))
         return WAITING_POST
 
     ctx.user_data["ch_id"]    = origin.chat.id
@@ -181,7 +197,7 @@ async def handle_count(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     ch_title = ctx.user_data.get("ch_title", "Channel")
 
     try:
-        pool = list(comments_store[ch_id][msg_id])
+        pool = list(await fetch_comments(ch_id, msg_id))
         await wait.delete()
 
         if not pool:
@@ -190,9 +206,9 @@ async def handle_count(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             )
             return WAITING_POST
 
-        total   = len(pool)
+        total  = len(pool)
+        pick_n = need
         warning = ""
-        pick_n  = need
 
         if total < need:
             pick_n  = total
@@ -248,62 +264,20 @@ async def cb_action(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         )
         return SELECTING_LANG
 
-# ── Listen for comments in discussion groups ──────────────────────────────────
-async def store_comment(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    msg = update.message
-    if not msg:
-        return
-
-    group_id = msg.chat_id
-
-    # Auto-forwarded channel post arriving in discussion group — build the mapping
-    if getattr(msg, "is_automatic_forward", False):
-        origin = msg.forward_origin
-        if origin and origin.type == "channel":
-            thread_map[group_id][msg.message_id] = (origin.chat.id, origin.message_id)
-        return
-
-    user = msg.from_user
-    if not user or user.is_bot:
-        return
-
-    ch_id = ch_msg_id = None
-
-    # Case 1: message is inside a known thread (most common — user just types in comments)
-    if msg.message_thread_id and msg.message_thread_id in thread_map.get(group_id, {}):
-        ch_id, ch_msg_id = thread_map[group_id][msg.message_thread_id]
-
-    # Case 2: explicit reply directly to the auto-forwarded channel post
-    elif msg.reply_to_message:
-        reply = msg.reply_to_message
-        if reply.forward_origin and reply.forward_origin.type == "channel":
-            ch_id = reply.forward_origin.chat.id
-            ch_msg_id = reply.forward_origin.message_id
-        elif reply.message_id in thread_map.get(group_id, {}):
-            ch_id, ch_msg_id = thread_map[group_id][reply.message_id]
-
-    if not ch_id or not ch_msg_id:
-        return
-
-    display = f"@{user.username}" if user.username else (
-        user.first_name + (f" {user.last_name}" if user.last_name else "")
-    )
-
-    comments_store[ch_id][ch_msg_id].add(display)
-    logger.info(f"Stored: {display} → channel {ch_id}, post {ch_msg_id}")
-
 # ── App entry point ───────────────────────────────────────────────────────────
 def main() -> None:
-    import os
-    import asyncio
+    global pyro
 
-    # Python 3.14 fix: manually create event loop
-    try:
-        asyncio.get_event_loop()
-    except RuntimeError:
-        asyncio.set_event_loop(asyncio.new_event_loop())
+    TOKEN    = os.environ["BOT_TOKEN"]
+    API_ID   = int(os.environ["API_ID"])
+    API_HASH = os.environ["API_HASH"]
 
-    TOKEN = os.getenv('BOT_TOKEN', 'YOUR_BOT_TOKEN_HERE')
+    pyro = PyroClient(
+        "bot_session",
+        api_id=API_ID,
+        api_hash=API_HASH,
+        bot_token=TOKEN,
+    )
 
     app = Application.builder().token(TOKEN).build()
 
@@ -342,16 +316,18 @@ def main() -> None:
     app.add_handler(conv)
     app.add_handler(CommandHandler("help", cmd_help))
 
-    # Comment collector — listens to ALL group messages (threads + replies)
-    app.add_handler(
-        MessageHandler(
-            filters.ChatType.GROUPS,
-            store_comment
-        ),
-        group=1,
-    )
+    async def on_startup(_):
+        await pyro.start()
+        logger.info("Pyrogram started")
 
-    logger.info("✅ Bot ishga tushdi / Бот запущен / Bot started")
+    async def on_shutdown(_):
+        await pyro.stop()
+        logger.info("Pyrogram stopped")
+
+    app.post_init    = on_startup
+    app.post_shutdown = on_shutdown
+
+    logger.info("Bot ishga tushdi")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
